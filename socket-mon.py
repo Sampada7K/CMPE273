@@ -3,10 +3,11 @@
 
 import psutil
 from operator import itemgetter
+from itertools import groupby
 
 def main():
-	space = "  %-10s %-30s %-30s %-30s %s"
-	print(space %("PID", "Program name", "Local address", "Remote address", "Status" ))
+	
+	print ("PID", "Program name", "laddr", "raddr", "Status")
 	process_names = {}
 	rows= []
 	
@@ -20,14 +21,14 @@ def main():
 		laddr = "%s:%s" % (connection.laddr)
 		raddr = ""
         
-		if connection.raddr:
+		if connection.raddr and connection.pid:
 			raddr = "%s:%s" % (connection.raddr)
 			row = [connection.pid, process_names[connection.pid], laddr, raddr, connection.status]
 			rows.append(row)
 			sorted_rows = sorted(rows, key=itemgetter(0))
-			
+		
 	for row in sorted_rows:
-		print space %(row[0], row[1], row[2], row[3], row[4] )
+		print (row[0], row[1], row[2], row[3], row[4])
 
 if __name__ == '__main__':
-    main()
+	main()

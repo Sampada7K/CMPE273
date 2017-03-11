@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import psutil
 from operator import itemgetter
 from itertools import groupby

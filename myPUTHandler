@@ -1,0 +1,66 @@
+import boto3
+import time
+
+client = boto3.client('dynamodb')
+
+def lambda_handler(event, context):
+    
+    response1 = client.get_item(
+        TableName='orderTable',
+        Key={'order_id': {'S': "{}".format(event['order_id'])}}
+    )
+    
+    menuId = response1["Item"]["menu_id"]["S"]
+    orderStatus = response1["Item"]["order_status"]["S"]
+   
+    
+    response2 = client.get_item(
+        TableName='menuTable',
+        Key={'menu_id': {'S': menuId}}
+    )
+    
+    sel = response2["Item"]["selection"]["SS"]
+    sz = response2["Item"]["size"]["L"]
+    pr = response2["Item"]["price"]["L"]
+    
+    if (orderStatus == "post"):
+        topping = sel[int(event['input'])-1]
+        n=1
+        op=""
+        for _ in sz:
+            op = op+str(n)+ "." +str(_["S"]) + " "
+            n+=1
+        
+        response1 = client.update_item(
+        TableName='orderTable',
+        Key={
+        'order_id': {
+            'S': "{}".format(event['order_id'])}},
+        UpdateExpression='set order_status = :os, #top = :o',
+        ExpressionAttributeNames={'#top': 'pizza_topping'},
+        ExpressionAttributeValues={':os': {'S': 'selection'}, ':o': {'S': topping}}
+        )
+    
+        message = "Which size do you want? " + op
+        return { "Message" :  message}
+    
+    if (orderStatus == "selection"):
+        order_time = time.strftime("%m-%d-%Y@%H:%M:%S")
+        psize = sz[int(event['input'])-1]["S"]
+        pcost = pr[int(event['input'])-1]["N"]
+        
+        response1 = client.update_item(
+        TableName='orderTable',
+        Key={
+        'order_id': {
+            'S': "{}".format(event['order_id'])}},
+        UpdateExpression='set order_status = :os, #psize = :o, #cs = :c, #ot = :t',
+        ExpressionAttributeNames={'#psize': 'pizza_size', '#cs': 'pizza_cost', '#ot':'order_time'},
+        ExpressionAttributeValues={':os': {'S': 'processing'}, ':o': {'S': psize}, ':c': {'N': pcost},':t':{'S': order_time}}
+        )
+        
+        message = "Your order costs $" + str(pcost) + ". We will email you when the order is ready. Thank you!"
+        return { "Message" :  message}
+    
+    
+    

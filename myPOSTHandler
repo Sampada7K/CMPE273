@@ -1,0 +1,39 @@
+import boto3
+
+client = boto3.client('dynamodb')
+
+
+def lambda_handler(event, context):
+
+    response = client.put_item(
+        TableName='orderTable',
+        Item={
+            "menu_id": {"S": "{}".format(event['menu_id']) },
+            "order_id": {"S":"{}".format(event['order_id']) },
+            "customer_name": {"S":"{}".format(event['customer_name']) },
+            "customer_email":{"S":"{}".format(event['customer_email']) },
+            "order_status": {"S":"post"}
+        }
+    )
+    
+    
+    response = client.get_item(
+        TableName='menuTable',
+        Key={'menu_id': {'S':event['menu_id']}},
+        ProjectionExpression='#s',
+        ExpressionAttributeNames={
+        '#s': 'selection'
+        }
+    )    
+    
+    sel = response["Item"]["selection"]["SS"]
+    
+    n=1
+    op=""
+    for _ in sel:
+        op = op+str(n)+ "." +str(_) + " "
+        n+=1
+        
+    message1 ='Hi {},'.format(event['customer_name'])
+    message2 = " please choose one of these selection: " + op
+    return { "Message" :  message1 + message2}
